@@ -186,35 +186,101 @@ namespace GOTHIC_ENGINE {
 		return level;
 	}
 
+	bool_t CanHackChest() {
+		if (!ogame)
+			return false;
+
+		if (ogame->singleStep)
+			return false;
+
+		if (ogame->pause_screen)
+			return false;
+
+		if (!player)
+			return false;
+
+		if (oCZoneMusic::s_herostatus != oHERO_STATUS_STD)
+			return false;
+
+		if (player->fmode != 0)
+			return false;
+
+		if (player->IsUnconscious())
+			return false;
+
+		if (player->attribute[NPC_ATR_HITPOINTS] <= 0)
+			return false;
+
+		if (player->sleepingMode != zVOB_AWAKE)
+			return false;
+
+		if (player->interactMob || player->interactItem)
+			return false;
+
+		if (player->inventory2.IsOpen())
+			return false;
+
+		if (!player->IsHuman())
+			return false;
+
+		if (player->GetBodyState() >= BS_SWIM)
+			return false;
+
+		if (player->anictrl && player->anictrl->IsInWeaponChoose())
+			return false;
+
+		if (!oCInformationManager::GetInformationManager().HasFinished())
+			return false;
+
+		if (!player->GetEM()->IsEmpty(true))
+			return false;
+
+		return true;
+	}
+
 	void oCNpc::AI_PlaySoundFromVob(zSTRING sound, zCVob* vob) {
+		oCMsgConversation* msg = nullptr;
+
 #if ENGINE == Engine_G1
-		oCMsgConversation* msg = new oCMsgConversation(oCMsgConversation::EV_PLAYSOUND, sound);
+		msg = new oCMsgConversation(oCMsgConversation::EV_PLAYSOUND, sound);
 #else
-		oCMsgConversation* msg = new oCMsgConversation(oCMsgConversation::EV_SNDPLAY, sound);
+		msg = new oCMsgConversation(oCMsgConversation::EV_SNDPLAY, sound);
 #endif
 		msg->f_yes = true;
 		msg->target = vob;
 		GetEM()->OnMessage(msg, this);
+
+		return;
 	}
 
 	void oCNpc::AI_DrawWeapon() {
 		oCMsgWeapon* msgWeapon = new oCMsgWeapon(oCMsgWeapon::EV_DRAWWEAPON, 0, 0);
 		//msgWeapon->useFist = useFist;
 		GetEM()->OnMessage(msgWeapon, this);
+
+		return;
 	}
 
 	void oCNpc::AI_RemoveWeapon() {
 		oCMsgWeapon* msgWeapon = new oCMsgWeapon(oCMsgWeapon::EV_REMOVEWEAPON, 0, 0);
 		GetEM()->OnMessage(msgWeapon, this);
+
+		return;
 	}
 
 	void oCNpc::AI_PlayAni(zSTRING anim) {
 		oCMsgConversation* msgPlayAni = new oCMsgConversation(oCMsgConversation::EV_PLAYANI_NOOVERLAY, anim);
 		msgPlayAni->number = 0;
-		this->GetEM()->OnMessage(msgPlayAni, this);
+		GetEM()->OnMessage(msgPlayAni, this);
+
+		return;
 	}
 
 	bool_t CanUseLockPick() {
+#if ENGINE == Engine_G1
+		return true;
+#endif
+
 		zCParser* par = zCParser::GetParser();
 		zCPar_Symbol* symbol = par->GetSymbol("NPC_TALENT_PICKLOCK");
 
@@ -245,7 +311,7 @@ namespace GOTHIC_ENGINE {
 		return true;
 	}
 
-	bool_t HasLockPick() {
+	bool_t HasLockPick(zSTRING lockpickInstanceName) {
 		zCParser* par = zCParser::GetParser();
 
 		int lockpickIndex = par->GetIndex(lockpickInstanceName);
@@ -262,58 +328,12 @@ namespace GOTHIC_ENGINE {
 		return true;
 	}
 
-	bool_t CanHackChest() {
-		if (oCZoneMusic::s_herostatus != oHERO_STATUS_STD)
-			return false;
-
-		if (player->fmode != 0)
-			return false;
-
-		if (player->IsUnconscious())
-			return false;
-
-		if (player->attribute[NPC_ATR_HITPOINTS] <= 0)
-			return false;
-
-		if (ogame->singleStep)
-			return false;
-
-		if (ogame->pause_screen)
-			return false;
-
-		if (player->interactMob || player->interactItem)
-			return false;
-
-		if (!oCInformationManager::GetInformationManager().HasFinished())
-			return false;
-
-		if (player->inventory2.IsOpen())
-			return false;
-
-		if (!player->IsHuman())
-			return false;
-
-		if (player->GetBodyState() >= BS_SWIM)
-			return false;
-
-		if (player->anictrl && player->anictrl->IsInWeaponChoose())
-			return false;
-
-		if (!player->GetEM(true)->IsEmpty(false))
-			return false;
-
-		return true;
-	}
-
-	void HackChestStr() {
+	void HackChest(int atr) {
 		zCParser* par = zCParser::GetParser();
-
 		zCVob* focusVob = player->GetFocusVob();
 
 		if (!focusVob)
 			return;
-
-		curDist = player->GetDistanceToVob(*focusVob);
 
 		oCMobLockable* vob = focusVob->CastTo<oCMobLockable>();
 		if (!vob)
@@ -328,10 +348,45 @@ namespace GOTHIC_ENGINE {
 		if (door && !door->sceme.StartWith("DOOR"))
 			return;
 
-		if (!vob->locked || vob->pickLockStr.IsEmpty())
-			return;
+		oCMsgMovement* msgStopMovement = new oCMsgMovement(oCMsgMovement::EV_STANDUP, 1);
+		player->GetEM()->OnMessage(msgStopMovement, player);
 
-		if (curDist > maxDist) {
+		if (!vob->locked) {
+			PrintMsg("Zamek jest ju¿ otwarty!");
+			player->AI_PlayAni("T_DONTKNOW");
+
+			return;
+		}
+
+		if (vob->locked && vob->pickLockStr.IsEmpty() && vob->keyInstance.IsEmpty()) {
+			int idx = par->GetIndex("PLAYER_MOB_MISSING_ITEM");
+			if (idx != Invalid) {
+				par->SetInstance("SELF", player);
+				par->CallFunc(idx);
+			}
+			else {
+				PrintMsg("Tego nie da siê otworzyæ.");
+				player->AI_PlayAni("T_DONTKNOW");
+			}
+
+			return;
+		}
+
+		if (vob->locked && vob->pickLockStr.IsEmpty() && !vob->keyInstance.IsEmpty()) {
+			int idx = par->GetIndex("PLAYER_MOB_MISSING_KEY");
+			if (idx != Invalid) {
+				par->SetInstance("SELF", player);
+				par->CallFunc(idx);
+			}
+			else {
+				PrintMsg("Potrzebujê klucza!");
+				player->AI_PlayAni("T_DONTKNOW");
+			}
+			return;
+		}
+
+		float curDist = player->GetDistanceToVob(*focusVob);
+		if (curDist > 250.0f) {
 			int idx = par->GetIndex("PLAYER_MOB_TOO_FAR_AWAY");
 			if (idx != Invalid) {
 				par->SetInstance("SELF", player);
@@ -344,161 +399,134 @@ namespace GOTHIC_ENGINE {
 			return;
 		}
 
-
 		if (!CanUseLockPick())
 			return;
 
-		oCMsgMovement* msgStopMovement = new oCMsgMovement(oCMsgMovement::EV_STANDUP, 1);
-		player->GetEM()->OnMessage(msgStopMovement, player);
+		int atrNeeded = CalculateHackChestLevel(vob->pickLockStr.Length());
+		int atrPlayer = player->attribute[atr];
 
-		int strNeeded = CalculateHackChestLevel(vob->pickLockStr.Length());
-		int strPlayer = player->attribute[NPC_ATR_STRENGTH];
+		zSTRING atrName = "";
+		if (atr == NPC_ATR_STRENGTH)
+			atrName = "si³a";
+		if (atr == NPC_ATR_DEXTERITY)
+			atrName = "zrêcznoœæ";
+		if (atr == NPC_ATR_MANA)
+			atrName = "mana";
 
-		if (strPlayer < strNeeded)
-		{
-			PrintMsg("Wymagana si³a: " + Z strPlayer + Z"/" + Z strNeeded);
+		if (atrPlayer < atrNeeded) {
+			PrintMsg("Wymagana " + atrName + Z": " + Z atrPlayer + Z"/" + Z atrNeeded);
 			player->AI_PlayAni("T_DONTKNOW");
 			return;
 		}
 
 		zSTRING anim = "";
-		int useFist = 0;
-		oCItem* weapon = player->GetEquippedMeleeWeapon();
+		int randy = rand() % 100;
+		bool_t fail = atrPlayer <= randy ? true : false;
 
-		if (!weapon) {
-			if (door) {
-				anim = "T_KICKDOOR";
-				useFist = 1;
+		if (atr == NPC_ATR_STRENGTH) {
+			bool_t kickDoor = false;
+			oCItem* weapon = player->GetEquippedMeleeWeapon();
+
+			if (!weapon) {
+				if (door) {
+					anim = "T_KICKDOOR";
+					kickDoor = true;
+				}
+				else {
+					int idx = par->GetIndex("PLAYER_MOB_MISSING_ITEM");
+					if (idx != Invalid) {
+						par->SetInstance("SELF", player);
+						par->CallFunc(idx);
+					}
+					else {
+						PrintMsg("Potrzebujê broni!");
+						player->AI_PlayAni("T_DONTKNOW");
+					}
+					return;
+				}
 			}
 			else {
-				int idx = par->GetIndex("PLAYER_MOB_MISSING_ITEM");
+				if ((weapon->flags & ITM_FLAG_SWD) || (weapon->flags & ITM_FLAG_AXE))
+					anim = "T_1HSBREAKCHEST";
+				else if ((weapon->flags & ITM_FLAG_2HD_SWD) || (weapon->flags & ITM_FLAG_2HD_AXE))
+					anim = "T_2HSBREAKCHEST";
+				else {
+					anim = "T_1HSBREAKCHEST";
+				}
+			}
+
+			if (kickDoor) {
+				player->AI_PlayAni(anim);
+			}
+			else {
+				player->AI_DrawWeapon();
+				player->AI_PlayAni(anim);
+				player->AI_RemoveWeapon();
+			}
+
+			if (kickDoor && fail)
+				player->AI_PlayAni("T_FALLB_2_FALLENB");
+		}
+		else if (atr == NPC_ATR_DEXTERITY) {
+#if ENGINE == Engine_G1
+			zSTRING lockpickInstanceName = "ITKELOCKPICK";
+#else
+			zSTRING lockpickInstanceName = "ITKE_LOCKPICK";
+#endif
+			if (!HasLockPick(lockpickInstanceName)) {
+				int idx = par->GetIndex("PLAYER_MOB_MISSING_LOCKPICK");
 				if (idx != Invalid) {
 					par->SetInstance("SELF", player);
 					par->CallFunc(idx);
 				}
 				else {
-					PrintMsg("Potrzebujê broni!");
+					PrintMsg("Nie mam wytrychów!");
 					player->AI_PlayAni("T_DONTKNOW");
 				}
 				return;
 			}
-		}
-		else {
-			if ((weapon->flags & ITM_FLAG_SWD) || (weapon->flags & ITM_FLAG_AXE))
-				anim = "T_1HSBREAKCHEST";
-			else if ((weapon->flags & ITM_FLAG_2HD_SWD) || (weapon->flags & ITM_FLAG_2HD_AXE))
-				anim = "T_2HSBREAKCHEST";
-			else {
-				anim = "T_1HSBREAKCHEST";
-			}
-		}
 
-		if (useFist) {
-			player->AI_PlayAni(anim);
+			if (chest) {
+				player->AI_PlayAni("T_CHESTBIG_STAND_2_S0");
+				player->AI_PlayAni("T_CHESTBIG_S0_UNLOCK");
+				player->AI_PlayAni("T_CHESTBIG_S0_2_STAND");
+			}
+			if (door)
+				player->AI_PlayAni("T_DOOR_FRONT_S0_TRY");
+
+			player->RemoveFromInv(lockpickInstanceName, 1);
+
+			if (fail)
+				player->AI_PlaySoundFromVob("PICKLOCK_BROKEN", vob);
+			else
+				player->AI_PlaySoundFromVob("PICKLOCK_SUCCESS", vob);
 		}
-		else {
-			player->AI_DrawWeapon();
-			player->AI_PlayAni(anim);
-			player->AI_RemoveWeapon();
+		else if (atr == NPC_ATR_MANA) {
+			if (fail) {
+				fail = false;
+				player->AI_PlayAni("T_MAGRUN_2_HEASHOOT");
+				player->AI_PlaySoundFromVob("PICKLOCK_SUCCESS", vob);
+				player->AI_PlayAni("T_HEASHOOT_2_STAND");
+			}
+			else {
+				player->AI_PlayAni("T_MAGRUN_2_WNDCAST");
+				player->AI_PlayAni("T_WNDCAST_2_WNDSHOOT");
+				player->AI_PlaySoundFromVob("PICKLOCK_SUCCESS", vob);
+				player->AI_PlayAni("T_WNDSHOOT_2_STAND");
+			}
+
+			player->attribute[atr] -= atrNeeded;
 		}
 
 		player->AssessUseMob_S(vob);
 
-		int randy = rand() % 100;
-
-		if (strPlayer <= randy) {
-			if (useFist)
-				player->AI_PlayAni("T_FALLB_2_FALLENB");
+		if (fail) {
+			PrintMsg("Nie uda³o siê otworzyæ zamka!");
 			return;
 		}
 
+		PrintMsg("Uda³o siê otworzyæ zamek!");
 		vob->locked = false;
-	}
-
-	void HackChestDex() {
-		zCParser* par = zCParser::GetParser();
-
-		zCVob* focusVob = player->GetFocusVob();
-
-		if (!focusVob)
-			return;
-
-		curDist = player->GetDistanceToVob(*focusVob);
-
-		oCMobLockable* vob = focusVob->CastTo<oCMobLockable>();
-		if (!vob)
-			return;
-
-		oCMobContainer* chest = focusVob->CastTo<oCMobContainer>();
-		oCMobDoor* door = focusVob->CastTo<oCMobDoor>();
-
-		if (!door && !chest)
-			return;
-
-		if (door && !door->sceme.StartWith("DOOR"))
-			return;
-
-		if (!vob->locked || vob->pickLockStr.IsEmpty())
-			return;
-
-		if (curDist > maxDist) {
-			int idx = par->GetIndex("PLAYER_MOB_TOO_FAR_AWAY");
-			if (idx != Invalid) {
-				par->SetInstance("SELF", player);
-				par->CallFunc(idx);
-			}
-			else {
-				PrintMsg("Za daleko!");
-				player->AI_PlayAni("T_DONTKNOW");
-			}
-			return;
-		}
-
-		if (!CanUseLockPick())
-			return;
-
-		if (!HasLockPick()) {
-			int idx = par->GetIndex("PLAYER_MOB_MISSING_LOCKPICK");
-			if (idx != Invalid) {
-				par->SetInstance("SELF", player);
-				par->CallFunc(idx);
-			}
-			else {
-				PrintMsg("Nie mam wytrychów!");
-				player->AI_PlayAni("T_DONTKNOW");
-			}
-			return;
-		}
-
-		oCMsgMovement* msgStopMovement = new oCMsgMovement(oCMsgMovement::EV_STANDUP, 1);
-		player->GetEM()->OnMessage(msgStopMovement, player);
-
-		int dexNeeded = CalculateHackChestLevel(vob->pickLockStr.Length());
-		int dexPlayer = player->attribute[NPC_ATR_DEXTERITY];
-
-		if (dexPlayer < dexNeeded)
-		{
-			PrintMsg("Wymagana zrêcznoœæ: " + Z dexPlayer + Z"/" + Z dexNeeded);
-			player->AI_PlayAni("T_DONTKNOW");
-			return;
-		}
-		//player->AI_PlayAni("T_PLUNDER");
-		player->AI_PlayAni("T_CHESTBIG_STAND_2_S0");
-		player->AssessUseMob_S(vob);
-		player->AI_PlayAni("T_CHESTBIG_S0_UNLOCK");
-		player->RemoveFromInv(lockpickInstanceName, 1);
-
-		int randy = rand() % 100;
-
-		if (dexPlayer <= randy) {
-			player->AI_PlaySoundFromVob("PICKLOCK_BROKEN", vob);
-		}
-		else {
-			player->AI_PlaySoundFromVob("PICKLOCK_SUCCESS", vob);
-			vob->locked = false;
-		}
-
-		player->AI_PlayAni("T_CHESTBIG_S0_2_STAND");
 	}
 
 	void Game_Entry() {
@@ -507,14 +535,9 @@ namespace GOTHIC_ENGINE {
 	void Game_Init() {
 		HotKeyStr = GetKeyCode(zoptions->ReadString("HackChest", "HotKeyStr", "KEY_T"));
 		HotKeyDex = GetKeyCode(zoptions->ReadString("HackChest", "HotKeyDex", "KEY_Y"));
+		HotKeyMan = GetKeyCode(zoptions->ReadString("HackChest", "HotKeyMan", "KEY_U"));
 		BaseLevel = zoptions->ReadInt("HackChest", "BaseLevel", 20);
 		AttPerLevel = zoptions->ReadInt("HackChest", "AttPerLevel", 5);
-
-#if ENGINE == Engine_G1
-		lockpickInstanceName = "ITKELOCKPICK";
-#else
-		lockpickInstanceName = "ITKE_LOCKPICK";
-#endif
 
 		if (!screenHack) {
 			screenHack = zNEW(zCView)(0, 0, 8192, 8192);
@@ -529,10 +552,24 @@ namespace GOTHIC_ENGINE {
 	}
 
 	void Game_Loop() {
-		if (zKeyToggled(HotKeyStr) && CanHackChest())
-			HackChestStr();
-		else if (zKeyToggled(HotKeyDex) && CanHackChest())
-			HackChestDex();
+		if (!CanHackChest())
+			return;
+
+		zCVob* focusVob = player->GetFocusVob();
+
+		if (!focusVob)
+			return;
+
+		oCMobLockable* vob = focusVob->CastTo<oCMobLockable>();
+		if (!vob)
+			return;
+
+		if (zKeyToggled(HotKeyStr))
+			HackChest(NPC_ATR_STRENGTH);
+		else if (zKeyToggled(HotKeyDex))
+			HackChest(NPC_ATR_DEXTERITY);
+		else if (zKeyToggled(HotKeyMan))
+			HackChest(NPC_ATR_MANA);
 	}
 
 	void Game_PostLoop() {

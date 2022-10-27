@@ -255,7 +255,6 @@ namespace GOTHIC_ENGINE {
 
 	void oCNpc::AI_DrawWeapon() {
 		oCMsgWeapon* msgWeapon = new oCMsgWeapon(oCMsgWeapon::EV_DRAWWEAPON, 0, 0);
-		//msgWeapon->useFist = useFist;
 		GetEM()->OnMessage(msgWeapon, this);
 
 		return;
@@ -544,7 +543,7 @@ namespace GOTHIC_ENGINE {
 			screen->InsertItem(screenHack);
 		}
 	}
-
+	
 	void Game_Exit() {
 	}
 
@@ -553,15 +552,6 @@ namespace GOTHIC_ENGINE {
 
 	void Game_Loop() {
 		if (!CanHackChest())
-			return;
-
-		zCVob* focusVob = player->GetFocusVob();
-
-		if (!focusVob)
-			return;
-
-		oCMobLockable* vob = focusVob->CastTo<oCMobLockable>();
-		if (!vob)
 			return;
 
 		if (zKeyToggled(HotKeyStr))

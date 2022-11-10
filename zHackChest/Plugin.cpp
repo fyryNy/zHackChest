@@ -501,17 +501,23 @@ namespace GOTHIC_ENGINE {
 				player->AI_PlaySoundFromVob("PICKLOCK_SUCCESS", vob);
 		}
 		else if (atr == NPC_ATR_MANA) {
-			if (fail) {
+			if (fail || player->attribute[NPC_ATR_MANAMAX] == atrNeeded) {
 				fail = false;
+				oCVisualFX* vis = oCVisualFX::CreateAndPlay("SPELLFX_TELEPORT", player, 0, 1, 0, 0, 0);
 				player->AI_PlayAni("T_MAGRUN_2_HEASHOOT");
 				player->AI_PlaySoundFromVob("PICKLOCK_SUCCESS", vob);
 				player->AI_PlayAni("T_HEASHOOT_2_STAND");
+				if (vis)
+					vis->Release();
 			}
 			else {
+				oCVisualFX* vis = oCVisualFX::CreateAndPlay("SPELLFX_CHARM", player, vob, 1, 0, 0, 0);
 				player->AI_PlayAni("T_MAGRUN_2_WNDCAST");
 				player->AI_PlayAni("T_WNDCAST_2_WNDSHOOT");
 				player->AI_PlaySoundFromVob("PICKLOCK_SUCCESS", vob);
 				player->AI_PlayAni("T_WNDSHOOT_2_STAND");
+				if (vis)
+					vis->Release();
 			}
 
 			player->attribute[atr] -= atrNeeded;
@@ -543,7 +549,7 @@ namespace GOTHIC_ENGINE {
 			screen->InsertItem(screenHack);
 		}
 	}
-	
+
 	void Game_Exit() {
 	}
 

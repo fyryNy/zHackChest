@@ -1,0 +1,27 @@
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Last Changes:
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Model ("Humans")
+{
+	meshAndTree ("HUM_BODY_NAKED0.ASC" DONT_USE_MESH)
+	aniEnum
+	{
+		ani  ("T_1HSBREAKCHEST" 1 "" 0.1 0.1 M. "HUM_1HSFINISH_A01.ASC"  F 1 89)
+		{
+			*eventSFX (25 "BREAKCHEST" EMPTY_SLOT)
+		}
+		ani  ("T_2HSBREAKCHEST" 1 "" 0.1 0.1 M. "HUM_TREASURE_A01.ASC"   F 1 75)
+		{
+			*eventTag (5  "DEF_INSERT_ITEM" "ZS_LEFTHAND")
+			*eventSFX (45 "BREAKCHEST"      EMPTY_SLOT)   
+		}
+		ani  ("T_KICKDOOR"      2 "" 0.2 0.2 M. "HUM_FISTATTACKMOVE.ASC" F 1 29)
+		{
+			*eventTag (0  "DEF_HIT_LIMB"  "Bip01 R Hand")
+			*eventTag (0  "DEF_OPT_FRAME" "6")           
+			*eventSFX (5  "WHOOSH"        EMPTY_SLOT)    
+			*eventSFX (20 "BREAKCHEST"    EMPTY_SLOT)    
+		}
+	}
+}

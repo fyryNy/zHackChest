@@ -35,8 +35,8 @@ Of course you need at least one lockpick in your equipment and every try uses up
 
 ### Mana
 100% chance to open, but if player max mana is below 100, or max mana is equal to mana needed, it will launch a bit longer animation.  
-Short animation - FX from spell Charm and animation like shooting a projectile spell
-Long animation - FX and animation from Teleport spell
+Short animation - FX from spell Charm and animation like shooting a projectile spell  
+Long animation - FX and animation from Teleport spell  
 
 ### Strength
 Basically you need a weapon to open something using strength attribute, with an exception on doors, where you can use kick without a weapon.  

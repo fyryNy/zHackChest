@@ -34,7 +34,7 @@ For both Strength and Dexterity there is small percentage chance that opening wi
 Of course you need at least one lockpick in your equipment and every try uses up one, both on fail and success.
 
 ### Mana
-100% chance to open, but if player max mana is below 100 it will launch a bit longer animation.  
+100% chance to open, but if player max mana is below 100, or max mana is equal to mana needed, it will launch a bit longer animation.  
 Short animation - FX from spell Charm and animation like shooting a projectile spell
 Long animation - FX and animation from Teleport spell
 

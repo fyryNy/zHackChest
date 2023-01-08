@@ -399,3 +399,4 @@ FodyWeavers.xsd
 /zHackChest/*Release
 /zHackChest/*Debug
 /archive
+*.vdf

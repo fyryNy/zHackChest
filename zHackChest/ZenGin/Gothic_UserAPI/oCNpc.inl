@@ -6,3 +6,4 @@ void AI_PlayAni(zSTRING ani);
 void AI_PlaySoundFromVob(zSTRING sound, zCVob* vob);
 void AI_DrawWeapon();
 void AI_RemoveWeapon();
+bool_t InSameRoom(zCVob* vob);

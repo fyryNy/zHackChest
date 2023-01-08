@@ -1,11 +1,7 @@
-
 // This file added in headers queue
 // File: "Headers.h"
 
 namespace GOTHIC_ENGINE {
-	int HotKeyStr;
-	int HotKeyDex;
-	int HotKeyMan;
 	int BaseLevel;
 	int AttPerLevel;
 
@@ -30,4 +26,6 @@ namespace GOTHIC_ENGINE {
 	int idxNoPicklockTalent;
 	int idxToofar_Away;
 	int idxPicklockMissing;
+
+	static std::map<int, std::vector<int>> KeyCombos;
 }

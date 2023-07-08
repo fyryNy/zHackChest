@@ -5,6 +5,8 @@ namespace GOTHIC_ENGINE {
 	int BaseLevel;
 	int AttPerLevel;
 
+	bool_t CanFail;
+
 	string Dexterity;
 	string Mana;
 	string Strength;

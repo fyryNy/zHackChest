@@ -261,7 +261,7 @@ namespace GOTHIC_ENGINE {
 
 		zSTRING anim = "";
 		int randy = rand() % 100;
-		bool_t fail = atrPlayer <= randy ? true : false;
+		bool_t fail = (CanFail && atrPlayer <= randy) ? true : false;
 
 		if (atr == NPC_ATR_STRENGTH) {
 			bool_t kickDoor = false;
@@ -373,6 +373,8 @@ namespace GOTHIC_ENGINE {
 		KeyCombos.insert(std::pair<int, std::vector<int>>(NPC_ATR_STRENGTH, GetKeyCombo(zoptions->ReadString("HackChest", "HotKeyStr", "KEY_T"))));
 		KeyCombos.insert(std::pair<int, std::vector<int>>(NPC_ATR_DEXTERITY, GetKeyCombo(zoptions->ReadString("HackChest", "HotKeyDex", "KEY_Y"))));
 		KeyCombos.insert(std::pair<int, std::vector<int>>(NPC_ATR_MANA, GetKeyCombo(zoptions->ReadString("HackChest", "HotKeyMan", "KEY_U"))));
+
+		CanFail = zoptions->ReadBool("HackChest", "CanFail", true);
 
 		BaseLevel = zoptions->ReadInt("HackChest", "BaseLevel", 20);
 		AttPerLevel = zoptions->ReadInt("HackChest", "AttPerLevel", 5);

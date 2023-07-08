@@ -18,6 +18,7 @@ Default settings:
 |HotKeyMan|KEY_U|HotKey for using mana points to open|
 |BaseLevel|20||
 |AttPerLevel|5||
+|CanFail|1|Fail mechanics</br>If turned off, there is always 100% to open lock if player meets the attribute requirements|
 
 Everything configurable in Gothic.ini
 
@@ -28,7 +29,7 @@ BaseLevel + (X * AttPerLevel)
 X is length of the picklock string, BaseLevel and AttPerLevel depends on the settings  
 e.g. Picklock string is "LRRLLRL" (length is 7) and using default settings then attribute points needed to open something is 20 + (7 * 5) = 55
 
-For both Strength and Dexterity there is small percentage chance that opening will fail, if player attribute is below 100.
+For both Strength and Dexterity there is small percentage chance that opening will fail, if player attribute is below 100 (optional).
 
 ### Dexterity
 Of course you need at least one lockpick in your equipment and every try uses up one, both on fail and success.
